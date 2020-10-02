@@ -128,41 +128,43 @@ class Process {
   }
 
  private:
-  /** Processing pass name. */
+  /// Processing pass name. */
   std::string passname_;
 
-  /** Limit on events to process. */
+  /// Limit on events to process.
   int eventLimit_;
 
-  /** The frequency with which event info is printed. */
+  /// The frequency with which event info is printed. 
   int logFrequency_;
 
-  /** Integer form of logging level to print to terminal */
+  /// Integer form of logging level to print to terminal 
   int termLevelInt_;
 
-  /** Integer form of logging level to print to file */
+  /// Integer form of logging level to print to file 
   int fileLevelInt_;
 
-  /** Name of file to print logging to */
+  /// Name of file to print logging to 
   std::string logFileName_;
 
-  /** Maximum number of attempts to make before giving up on an event */
+  /// Maximum number of attempts to make before giving up on an event 
   int maxTries_;
 
-  /** Storage controller */
+  /// Storage controller 
   StorageControl m_storageController;
 
-  /** Ordered list of EventProcessors to execute. */
+  /// Ordered list of EventProcessors to execute. 
   std::vector<EventProcessor *> sequence_;
 
-  /** Set of ConditionsProviders */
+  /// Set of ConditionsProviders 
   Conditions conditions_;
 
-  /** List of input files to process.  May be empty if this Process will
-   * generate new events. */
+  /** 
+   * List of input files to process.  May be empty if this Process will
+   * generate new events. 
+   */
   std::vector<std::string> inputFiles_;
 
-  /** List of output file names.  If empty, no output file will be created. */
+  /// List of output file names.  If empty, no output file will be created. 
   std::vector<std::string> outputFiles_;
 
   /** Compression setting to pass to output files
@@ -174,19 +176,19 @@ class Process {
    */
   int compressionSetting_;
 
-  /** Set of drop/keep rules. */
+  /// Set of drop/keep rules. 
   std::vector<std::string> dropKeepRules_;
 
-  /** Run number to use if generating events. */
+  /// Run number to use if generating events. 
   int runForGeneration_{1};
 
-  /** Filename for histograms and other user products */
+  /// Filename for histograms and other user products 
   std::string histoFilename_;
 
-  /** Pointer to the current EventHeader, used for Conditions information */
+  /// Pointer to the current EventHeader, used for Conditions information 
   const EventHeader *eventHeader_;
 
-  /** TFile for histograms and other user products */
+  /// TFile for histograms and other user products 
   TFile *histoTFile_{0};
 };
 
