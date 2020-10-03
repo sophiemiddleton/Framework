@@ -1,7 +1,3 @@
-/**
- * @file Process.cxx
- * Implementation file for Process class
- */
 
 #include "Framework/Process.h"
 #include "Framework/Event.h"
@@ -16,9 +12,24 @@
 #include "TROOT.h"
 #include <iostream>
 
+/*~~~~~~~~~~~~*/
+/*   DD4hep   */
+/*~~~~~~~~~~~~*/
+#include "DD4hep/Detector.h" 
+
 namespace ldmx {
 
 Process::Process(const Parameters &configuration) : conditions_{*this} {
+
+  // Get the path to the compact description of the detector. This is used 
+  // to build the in memory detector description.  If the path isn't empty, 
+  // attempt to load the detector into memory.  The compact loader provided 
+  // by DD4Hep will error out if there are issues loading the detector 
+  // description from the provided path. 
+  detector_path_ = configuration.getParameter<std::string>("detector", "");
+  if(!detector_path_.empty()) {
+    dd4hep::Detector::getInstance().fromCompact(detector_path_); 
+  }
 
   passname_ = configuration.getParameter<std::string>("passName", "");
   histoFilename_ = configuration.getParameter<std::string>("histogramFile", "");

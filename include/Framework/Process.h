@@ -128,8 +128,11 @@ class Process {
   }
 
  private:
-  /// Processing pass name. */
+  /// Processing pass name.
   std::string passname_;
+
+  /// Path to compact detector description
+  std::string detector_path_{""};
 
   /// Limit on events to process.
   int eventLimit_;
