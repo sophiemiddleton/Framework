@@ -21,6 +21,11 @@
 #include <any>
 #include <map>
 
+/*~~~~~~~~~~~~*/
+/*   DD4hep   */
+/*~~~~~~~~~~~~*/
+#include "DD4hep/Detector.h"
+
 class TDirectory;
 
 namespace ldmx {
@@ -193,6 +198,20 @@ class EventProcessor {
    * @parma histos vector of Parameters that configure histograms to create
    */
   void createHistograms(const std::vector<Parameters> &histos);
+
+  /**
+   * Retrieve the interface to the dd4hep detector description. 
+   * 
+   * This method will make sure that a geometry has been loaded into memory by
+   * checking the state of the Detector object.  If the Detector object is
+   * freshly created, an exception is thrown. 
+   *
+   * @throw GeometryNotLoadedException Thrown in the case where a geometry has
+   *  not been loaded into memory.
+   *
+   * @return The in memory description of the geometry.
+   */
+  dd4hep::Detector& detector(); 
 
  protected:
   /**

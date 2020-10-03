@@ -62,6 +62,18 @@ void EventProcessor::createHistograms(const std::vector<Parameters> &histos) {
   }
 }
 
+dd4hep::Detector &EventProcessor::detector() {
+  // Get the detector instance and check if a geometry has been loaded. If not,
+  // throw an exception.
+  dd4hep::Detector& detector{dd4hep::Detector::getInstance()};
+  if (detector.state() == dd4hep::Detector::State::NOT_READY) {
+    EXCEPTION_RAISE("GeometryNotLoadedException",
+                    "A detector description has not been loaded.");
+  }
+
+  return detector;
+}
+
 Producer::Producer(const std::string &name, Process &process)
     : EventProcessor(name, process) {}
 
