@@ -28,6 +28,9 @@ find_package(ROOT 6.16 CONFIG REQUIRED)
 # used to generate the dictionary. 
 include("${ROOT_DIR}/RootMacros.cmake")
 
+# Setup the DD4Hep target
+setup_dd4hep_target()
+
 # Execute the command to extract the SHA1 hash of the current git tag. 
 # The variable GIT_SHA1 will be set to contain the hash. 
 execute_process (
@@ -91,6 +94,7 @@ setup_library(name Framework
                            ROOT::Core ROOT::Hist ROOT::TreePlayer
                            Boost::log Boost::atomic Boost::regex
                            Framework::Exception Framework::Configure
+                           DD4hep::DDCore
                            "${registered_targets}"
                sources EventDic.cxx ${SRC_FILES}
 )
