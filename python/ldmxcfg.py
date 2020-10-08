@@ -304,6 +304,8 @@ class Process:
         Minimum severity of log messages to print to file: 0 (debug) - 4 (fatal)
     logFileName : str
         File to print log messages to, won't setup file logging if this parameter is not set
+    detector : str
+        Path to the detector description file.
     conditionsObjectProviders : list of ConditionsObjectProviders
         List of the sources of calibration and conditions information
 
@@ -338,6 +340,7 @@ class Process:
         self.compressionSetting=9
         self.histogramFile=''
         self.conditionsObjectProviders=[]
+        self.detector=''
         Process.lastProcess=self
 
     def addLibrary(lib) :
