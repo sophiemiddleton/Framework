@@ -10,6 +10,7 @@
 #include "Framework/PluginFactory.h"
 #include "Framework/Event.h"
 #include "Framework/EventFile.h"
+#include "Framework/EventFileFactory.h" 
 #include "Framework/Process.h"
 #include "Framework/NtupleManager.h"
 #include "Framework/Logger.h"
@@ -115,6 +116,9 @@ namespace ldmx {
         // procesed
         auto n_events_processed{0};
 
+        // The EventFile factory
+        auto event_file_factory{framework::EventFileFactory::getInstance()}; 
+
         //event bus for this process
         Event theEvent(passname_);
         
@@ -135,14 +139,17 @@ namespace ldmx {
                     << "Only the first output file '" << outputFiles_.at(0) << "' will be used.";
             }
             std::string outputFileName = outputFiles_.at(0);
-            
-            EventFile outFile(outputFileName, compressionSetting_);
+            // ==>
+            //EventFile outFile(outputFileName, compressionSetting_);
+            auto outFile{event_file_factory->createEventFile(
+                "lcio", outputFileName, nullptr, true, true, 
+                compressionSetting_)}; 
 
-            for (auto module : sequence_) module->onFileOpen(outFile);
+            for (auto module : sequence_) module->onFileOpen(*outFile.get());
 
-            outFile.setupEvent(&theEvent);
+            outFile->setupEvent(&theEvent);
             
-            for ( auto rule : dropKeepRules_ ) outFile.addDrop(rule);
+            for ( auto rule : dropKeepRules_ ) outFile->addDrop(rule);
 
             int numTries = 0; //number of tries for the current event number
             while (n_events_processed < eventLimit_) {
@@ -181,7 +188,7 @@ namespace ldmx {
                     }
                 }
                 
-                outFile.nextEvent( eventAborted ? false : m_storageController.keepEvent() /*ignore storage control if event aborted*/);
+                outFile->nextEvent( eventAborted ? false : m_storageController.keepEvent() /*ignore storage control if event aborted*/);
 
                 if ( not eventAborted or numTries >= maxTries_ ) {
                     n_events_processed++; //increment events made
@@ -193,14 +200,14 @@ namespace ldmx {
                 theEvent.Clear();
             }
 
-            for (auto module : sequence_) module->onFileClose(outFile);
+            for (auto module : sequence_) module->onFileClose(*outFile.get());
             
-            outFile.close();
+            outFile->close();
             
         } else {
             //there are input files
 
-            EventFile* outFile(0);
+          std::unique_ptr<framework::EventFile> outFile{nullptr};
 
             bool singleOutput = false;
             if ( outputFiles_.size() == 1 ) {
@@ -217,14 +224,16 @@ namespace ldmx {
             int wasRun = -1;
             for (auto infilename : inputFiles_) {
 
-                EventFile inFile(infilename);
+                //EventFile inFile(infilename);
+                auto inFile{event_file_factory->createEventFile(
+                "lcio", infilename, nullptr, false, true, 9)}; 
 
                 ldmx_log(info) << "Opening file " << infilename;
 
-                for (auto module : sequence_) module->onFileOpen(inFile);
+                for (auto module : sequence_) module->onFileOpen(*inFile);
                 
                 //configure event file that will be iterated over
-                EventFile* masterFile; 
+                std::unique_ptr<framework::EventFile> masterFile; 
                 if ( !outputFiles_.empty() ) {
 
                     //setup new output file if either
@@ -232,13 +241,17 @@ namespace ldmx {
                     // 2) this is the first input file
                     if ( !singleOutput or ifile == 0 ) {
                         //setup new output file
-                        outFile = new EventFile(outputFiles_[ifile], &inFile, singleOutput, compressionSetting_ );
+                        // ==>
+                        //outFile = new EventFile(outputFiles_[ifile], &inFile, singleOutput, compressionSetting_ );
+                        outFile = event_file_factory->createEventFile(
+                "lcio", outputFiles_[ifile], inFile.get(), true, singleOutput, 
+                compressionSetting_); 
                         ifile++;
 
                         //setup theEvent we will iterate over
                         if (outFile) {
                             outFile->setupEvent( &theEvent );
-                            masterFile = outFile;
+                            masterFile = std::move(outFile);
                         } else {
                             EXCEPTION_RAISE(
                                     "Process",
@@ -250,15 +263,15 @@ namespace ldmx {
 
                     } else {
                         //all other input files
-                        outFile->updateParent( &inFile );
-                        masterFile = outFile;
+                        outFile->updateParent( inFile.get() );
+                        masterFile = std::move(outFile);
 
                     } //check if in singleOutput mode
 
                 } else {
                     //empty output file list, use inputFile as master file
-                    inFile.setupEvent( &theEvent );
-                    masterFile = &inFile;
+                    inFile->setupEvent( &theEvent );
+                    masterFile = std::move(inFile);
                 }
 
                 bool eventAborted = false;
@@ -324,17 +337,16 @@ namespace ldmx {
 
                 ldmx_log(info) << "Closing file " << infilename;
 
-                for (auto module : sequence_) module->onFileClose(inFile);
+                for (auto module : sequence_) module->onFileClose(*inFile);
 
-                inFile.close();
+                inFile->close();
 
                 // Reset the event in case of multiple input files
                 theEvent.onEndOfFile();
 
                 if ( outFile and !singleOutput ) {
                     outFile->close();
-                    delete outFile;
-                    outFile = nullptr;
+                    outFile.reset(); 
                 }
 
             } //loop through input files
@@ -343,8 +355,7 @@ namespace ldmx {
                 //close outFile
                 //  outFile would survive to here in single output mode
                 outFile->close();
-                delete outFile;
-                outFile = nullptr;
+                outFile.reset(); 
             }
 
         } //are there input files? if-else tree
