@@ -27,6 +27,9 @@ find_package(
              atomic
              regex)
 
+# Setup the LCIO target
+setup_lcio_target()
+
 # Search and configure ROOT
 find_package(ROOT 6.16 CONFIG REQUIRED)
 
@@ -103,6 +106,7 @@ setup_library(name Framework
                Framework::Exception
                Framework::Configure
                "${registered_targets}"
+               LCIO::LCIO
   sources EventDic.cxx
           ${SRC_FILES})
 
