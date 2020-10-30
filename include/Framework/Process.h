@@ -11,6 +11,7 @@
 #include "Framework/Conditions.h"
 #include "Framework/Configure/Parameters.h"
 #include "Framework/Exception/Exception.h"
+#include "Framework/RunHeader.h"
 #include "Framework/StorageControl.h"
 
 // STL
@@ -190,6 +191,9 @@ class Process {
 
   /// Pointer to the current EventHeader, used for Conditions information 
   const EventHeader *eventHeader_;
+
+  /// Pointer to the current RunHeader, used for Conditions information 
+  const RunHeader *runHeader_{0};
 
   /// TFile for histograms and other user products 
   TFile *histoTFile_{0};
