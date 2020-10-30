@@ -45,7 +45,8 @@ typedef EventProcessor *EventProcessorMaker(const std::string &name,
  */
 class AbortEventException : public Exception {
 
- public:
+public:
+  /*
    * Constructor
    *
    * Use empty Exception constructor so stack trace isn't built.
@@ -64,7 +65,7 @@ class AbortEventException : public Exception {
  */
 class EventProcessor {
 
- public:
+public:
   /**
    * Class constructor.
    * @param name Name for this instance of the class.
@@ -183,6 +184,11 @@ class EventProcessor {
   int getRunNumber() const;
 
   /**
+   * Get the processor name
+   */
+  std::string getName() const { return name_; }
+
+  /**
    * Internal function which is part of the PluginFactory machinery.
    * @param classname The class name of the processor.
    * @param classtype The class type of the processor (1 for Producer, 2 for
@@ -199,20 +205,20 @@ class EventProcessor {
   void createHistograms(const std::vector<Parameters> &histos);
 
   /**
-   * Retrieve the interface to the dd4hep detector description. 
-   * 
+   * Retrieve the interface to the dd4hep detector description.
+   *
    * This method will make sure that a geometry has been loaded into memory by
    * checking the state of the Detector object.  If the Detector object is
-   * freshly created, an exception is thrown. 
+   * freshly created, an exception is thrown.
    *
    * @throw GeometryNotLoadedException Thrown in the case where a geometry has
    *  not been loaded into memory.
    *
    * @return The in memory description of the geometry.
    */
-  dd4hep::Detector& detector(); 
+  dd4hep::Detector &detector();
 
- protected:
+protected:
   /**
    * Abort the event immediately.
    *
@@ -229,7 +235,7 @@ class EventProcessor {
   /// The logger for this EventProcessor
   logging::logger theLog_;
 
- private:
+private:
   /**
    * Internal getter for conditions without exposing all of Process
    */
@@ -259,7 +265,7 @@ class EventProcessor {
  */
 class Producer : public EventProcessor {
 
- public:
+public:
   /** Constant used to track EventProcessor types by the PluginFactory */
   static const int CLASSTYPE{1};
 
