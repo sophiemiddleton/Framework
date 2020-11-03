@@ -381,7 +381,9 @@ class Process:
         self.maxTriesPerEvent=1
         self.run=-1
         self.inputFiles=[]
+        self.input_file_type="root"
         self.outputFiles=[]
+        self.output_file_type="root"
         self.sequence=[]
         self.keep=[]
         self.libraries=[]

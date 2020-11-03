@@ -13,6 +13,7 @@
 #include "Framework/Conditions.h"
 #include "Framework/Configure/Parameters.h"
 #include "Framework/Event.h"
+#include "Framework/EventFile.h" 
 #include "Framework/Exception/Exception.h"
 #include "Framework/Histograms.h"
 #include "Framework/Logger.h"
@@ -32,7 +33,6 @@ namespace ldmx {
 
 class Process;
 class EventProcessor;
-class EventFile;
 
 /** Typedef for EventProcessorFactory use. */
 typedef EventProcessor *EventProcessorMaker(const std::string &name,
@@ -112,7 +112,7 @@ public:
    * @param filename Input event ROOT file name.
    * @note This callback is rarely used.
    */
-  virtual void onFileOpen(EventFile &eventFile) {}
+  virtual void onFileOpen(framework::EventFile &eventFile) {}
 
   /**
    * Callback for the EventProcessor to take any necessary
@@ -120,7 +120,7 @@ public:
    * @param filename Input event ROOT file name
    * @note This callback is rarely used.
    */
-  virtual void onFileClose(EventFile &eventFile) {}
+  virtual void onFileClose(framework::EventFile &eventFile) {}
 
   /**
    * Callback for the EventProcessor to take any necessary

@@ -22,10 +22,13 @@
 class TFile;
 class TDirectory;
 
+namespace framework {
+class EventFile; 
+}
+
 namespace ldmx {
 
 class EventProcessor;
-class EventFile;
 class Event;
 
 /**
@@ -134,6 +137,12 @@ private:
   }
 
 private:
+  /// Input file type
+  std::string input_file_type_;
+
+  /// Output file type
+  std::string output_file_type_; 
+
   /** Processing pass name. */
   std::string passname_;
 
