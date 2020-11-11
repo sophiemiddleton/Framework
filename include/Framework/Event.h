@@ -462,6 +462,22 @@ namespace ldmx {
             std::string getPassName() {
                 return passName_;
             }
+	  
+            /**
+             * Get the beam electron count.
+             * @return the event beam electron count.
+             */
+            int getElectronCount() const {
+              return electronCount_;
+            }
+
+            /**
+             * Set the beam electron count.
+             * @param the event beam electron count.
+             */
+            int setElectronCount( int nElectrons ) {
+              electronCount_ = nElectrons;
+            }
 
         private:
 
@@ -640,6 +656,11 @@ namespace ldmx {
              */
             TTree* inputTree_{nullptr};
 
+            /**                                                                                                                                                 
+             * The total number of beam electrons in the event.
+             */
+            int electronCount_{-1};
+	  
             /**
              * Map of names to branches.
              */
