@@ -8,23 +8,21 @@
 
 namespace ldmx {
 
-RunHeader::RunHeader(int runNumber) : runNumber_(runNumber) {}
-
 void RunHeader::stream(std::ostream &s) const {
   s << "RunHeader { run: " << getRunNumber()
     << ", detectorName: " << getDetectorName()
     << ", description: " << getDescription() << "\n";
-  s << "  intParameters: "
+  s << "  int parameters: "
     << "\n";
-  for (const auto &[key, val] : intParameters_)
+  for (const auto &[key, val] : int_params_)
     s << "    " << key << " = " << val << "\n";
-  s << "  floatParameters: "
+  s << "  float parameters: "
     << "\n";
-  for (const auto &[key, val] : floatParameters_)
+  for (const auto &[key, val] : float_params_)
     s << "    " << key << " = " << val << "\n";
-  s << "  stringParameters: "
+  s << "  string parameters: "
     << "\n";
-  for (const auto &[key, val] : stringParameters_)
+  for (const auto &[key, val] : string_params_)
     s << "    " << key << " = " << val << "\n";
   s << "}";
 }

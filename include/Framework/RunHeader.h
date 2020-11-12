@@ -1,5 +1,5 @@
-#ifndef EVENT_RUN_HEADER_H_
-#define EVENT_RUN_HEADER_H_
+#ifndef FRAMEWORK_RUNHEADER_H_
+#define FRAMEWORK_RUNHEADER_H_
 
 /*~~~~~~~~~~*/
 /*   ROOT   */
@@ -15,11 +15,12 @@
 /*~~~~~~~~~~~~~~~*/
 /*   Framework   */
 /*~~~~~~~~~~~~~~~*/
+#include "Framework/AbstractRunHeader.h"
 #include "Framework/Version.h"
 
 namespace ldmx {
 
-class RunHeader {
+class RunHeader : public framework::AbstractRunHeader {
 
 public:
   /**
@@ -27,26 +28,24 @@ public:
    *
    * @param runNumber The run number uniquely identifying this run
    */
-  RunHeader(int runNumber);
+  RunHeader(int runNumber) : framework::AbstractRunHeader(runNumber){};
 
-  /**
-   * Default constructor.
-   *
-   * @note This exists for filling the object from a ROOT branch.
-   */
-  RunHeader() {}
+  // RunHeader() {}
 
-  /** Destructor. */
-  virtual ~RunHeader() {}
-
-  /** @return The run number. */
-  int getRunNumber() const { return runNumber_; }
+  /// Destructor
+  virtual ~RunHeader() = default;
 
   /** @return The name of the detector used to create the events. */
   const std::string &getDetectorName() const { return detectorName_; }
 
-  /** Set the name of the detector that was used in this run */
-  void setDetectorName(const std::string &det) { detectorName_ = det; }
+  /**
+   * Set the name of the detector that was used in this run
+   *
+   * @param[in] detector_name The detector name that was used in this run.
+   */
+  void setDetectorName(const std::string &det) final override {
+    detectorName_ = det;
+  }
 
   /**
    * @return The git SHA-1 associated with the software tag used
@@ -57,86 +56,28 @@ public:
   /** @return A short description of the run. */
   const std::string &getDescription() const { return description_; }
 
-  /** Set the description of this run */
-  void setDescription(const std::string &des) { description_ = des; }
-
   /**
-   * Get the start time of the run in seconds since epoch.
+   * Set a short description of the run.
    *
-   * @return The start time of the run.
-   *
+   * @param[in] description A short description of the run.
    */
-  int getRunStart() const { return runStart_; }
-
-  /**
-   * Set the run start time in seconds since epoch.
-   *
-   * @param[in] runStart the start time of the run.
-   */
-  void setRunStart(const int runStart) { runStart_ = runStart; }
-
-  /**
-   * Get the end time of the run in seconds since epoch.
-   *
-   * @return The end time of the run.
-   */
-  int getRunEnd() const { return runEnd_; }
-
-  /**
-   * Set the end time of the run in seconds since epoch
-   *
-   * @param[in] runEnd the end time of the run.
-   */
-  void setRunEnd(const int runEnd) { runEnd_ = runEnd; }
-
-  /**
-   * Get an int parameter value.
-   *
-   * @param name The name of the parameter.
-   * @return The parameter value.
-   */
-  int getIntParameter(const std::string &name) const {
-    return intParameters_.at(name);
-  }
-
-  /// Get a const reference to all int parameters
-  const std::map<std::string, int> &getIntParameters() const {
-    return intParameters_;
+  void setDescription(const std::string &des) final override {
+    description_ = des;
   }
 
   /**
-   * Set an int parameter value.
-   *
-   * @param name The name of the parameter.
-   * @param value The value of the parameter.
-   */
-  void setIntParameter(const std::string &name, int value) {
-    intParameters_[name] = value;
-  }
-
-  /**
-   * Get a float parameter value.
-   *
-   * @param name The name of the parameter.
-   * @return value The parameter value.
-   */
-  float getFloatParameter(const std::string &name) const {
-    return floatParameters_.at(name);
-  }
-
-  /// Get a const reference to all float parameters
-  const std::map<std::string, float> &getFloatParameters() const {
-    return floatParameters_;
-  }
-
-  /**
-   * Set a float parameter value.
+   * Set a string parameter value.
    *
    * @param name The name of the parameter.
    * @param value The parameter value.
    */
-  void setFloatParameter(const std::string &name, float value) {
-    floatParameters_[name] = value;
+  void setStringParameter(const std::string &name, std::string value) final override {
+    string_params_[name] = value;
+  }
+  
+  /// Get a const reference to all string parameters
+  const std::map<std::string, std::string> &getStringParameters() const {
+    return string_params_;
   }
 
   /**
@@ -146,22 +87,57 @@ public:
    * @return value The parameter value.
    */
   std::string getStringParameter(const std::string &name) const {
-    return stringParameters_.at(name);
-  }
-
-  /// Get a const reference to all string parameters
-  const std::map<std::string, std::string> &getStringParameters() const {
-    return stringParameters_;
+    return string_params_.at(name);
   }
 
   /**
-   * Set a string parameter value.
+   * Set an int parameter value.
+   *
+   * @param name The name of the parameter.
+   * @param value The value of the parameter.
+   */
+  void setIntParameter(const std::string &name, int value) final override {
+    int_params_[name] = value;
+  }
+
+  /**
+   * Get an int parameter value.
+   *
+   * @param name The name of the parameter.
+   * @return The parameter value.
+   */
+  int getIntParameter(const std::string &name) const {
+    return int_params_.at(name);
+  }
+
+  /// Get a const reference to all int parameters
+  const std::map<std::string, int> &getIntParameters() const {
+    return int_params_;
+  }
+
+  /**
+   * Set a float parameter value.
    *
    * @param name The name of the parameter.
    * @param value The parameter value.
    */
-  void setStringParameter(const std::string &name, std::string value) {
-    stringParameters_[name] = value;
+  void setFloatParameter(const std::string &name, float value) final override {
+    float_params_[name] = value;
+  }
+
+  /**
+   * Get a float parameter value.
+   *
+   * @param name The name of the parameter.
+   * @return value The parameter value.
+   */
+  float getFloatParameter(const std::string &name) const {
+    return float_params_.at(name);
+  }
+
+  /// Get a const reference to all float parameters
+  const std::map<std::string, float> &getFloatParameters() const {
+    return float_params_;
   }
 
   /**
@@ -192,21 +168,33 @@ public:
     return s;
   }
 
-private:
-  /** Run number. */
-  int runNumber_{0};
+  /**
+   * Create an instance of a RunHeader object.
+   *
+   * @param[in] run_number The run number uniquely identifying the run.
+   *
+   * @return An instance of a RunHeader object.
+   */
+  static std::shared_ptr<AbstractRunHeader> create(const int run_number) {
+    std::shared_ptr<AbstractRunHeader> run_header(new RunHeader(run_number));
+    return run_header;
+  }
 
+private:
+  /// Map of string parameters.
+  std::map<std::string, std::string> string_params_;
+  
+  /// Map of int parameters.
+  std::map<std::string, int> int_params_;
+
+  /// Map of float parameters. 
+  std::map<std::string, float> float_params_;
+  
   /** Detector name. */
   std::string detectorName_{""};
 
   /** Run description. */
   std::string description_{""};
-
-  /// Run start in seconds since epoch
-  int runStart_{0};
-
-  /// Run end in seconds since epoch
-  int runEnd_{0};
 
   /**
    * git SHA-1 hash associated with the software tag used to generate
@@ -214,16 +202,7 @@ private:
    */
   std::string softwareTag_{GIT_SHA1};
 
-  /** Map of int parameters. */
-  std::map<std::string, int> intParameters_;
-
-  /** Map of float parameters. */
-  std::map<std::string, float> floatParameters_;
-
-  /** Map of string parameters. */
-  std::map<std::string, std::string> stringParameters_;
-
-  ClassDef(RunHeader, 3);
+  ClassDef(RunHeader, 4);
 
 }; // RunHeader
 
