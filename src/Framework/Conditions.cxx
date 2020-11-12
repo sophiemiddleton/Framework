@@ -34,9 +34,9 @@ void Conditions::onProcessEnd() {
     ptr.second->onProcessEnd();
 }
 
-void Conditions::onNewRun(RunHeader& rh) {
+void Conditions::onNewRun(std::shared_ptr<framework::AbstractRunHeader> run_header) {
   for (auto ptr: providerMap_)
-    ptr.second->onNewRun(rh);
+    ptr.second->onNewRun(run_header);
 }
 
 ConditionsIOV Conditions::getConditionIOV(const std::string& condition_name) const {

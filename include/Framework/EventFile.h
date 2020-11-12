@@ -10,7 +10,7 @@
 
 // LDMX
 #include "Framework/Event.h"
-#include "Framework/RunHeader.h"
+#include "Framework/AbstractRunHeader.h"
 
 using namespace ldmx;
 
@@ -72,8 +72,6 @@ public:
   /**
    * Close the file, writing the tree to disk if creating an output file.
    *
-   * Deletes any RunHeaders that this instance of EventFile owns.
-   *
    * @throw Exception if run tree already exists in output file.
    */
   virtual void close() = 0;
@@ -87,7 +85,7 @@ public:
    * @param runHeader The run header to write into the map
    * @throw Exception if run number is already in run map
    */
-  void writeRunHeader(RunHeader &runHeader){};
+  virtual void writeRunHeader(std::shared_ptr<AbstractRunHeader> runHeader) = 0;
 
   /**
    * Get the RunHeader for a given run, if it exists in the input file.
@@ -96,7 +94,7 @@ public:
    * @throw Exception if there is no RunHeader in the map with the given run
    * number.
    */
-  RunHeader &getRunHeader(int runNumber){};
+  std::shared_ptr<AbstractRunHeader> getRunHeader(int runNumber){};
 
   const std::string &getFileName() { return filename_; }
 

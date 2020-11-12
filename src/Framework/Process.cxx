@@ -6,13 +6,13 @@
 #include "Framework/Process.h"
 #include "Framework/Event.h"
 #include "Framework/EventFile.h"
-#include "Framework/EventFileFactory.h" 
+#include "Framework/EventFileFactory.h"
 #include "Framework/EventProcessor.h"
 #include "Framework/Exception/Exception.h"
 #include "Framework/Logger.h"
 #include "Framework/NtupleManager.h"
 #include "Framework/PluginFactory.h"
-#include "Framework/RunHeader.h"
+#include "Framework/RunHeaderFactory.h"
 #include "TFile.h"
 #include "TROOT.h"
 #include <iostream>
@@ -35,12 +35,12 @@ Process::Process(const Parameters &configuration) : conditions_{*this} {
 
   inputFiles_ =
       configuration.getParameter<std::vector<std::string>>("inputFiles", {});
-  input_file_type_ = 
-      configuration.getParameter<std::string>("input_file_type", "root"); 
+  input_file_type_ =
+      configuration.getParameter<std::string>("input_file_type", "root");
   outputFiles_ =
       configuration.getParameter<std::vector<std::string>>("outputFiles", {});
-  output_file_type_ = 
-      configuration.getParameter<std::string>("output_file_type", "root"); 
+  output_file_type_ =
+      configuration.getParameter<std::string>("output_file_type", "root");
   dropKeepRules_ =
       configuration.getParameter<std::vector<std::string>>("keep", {});
 
@@ -135,8 +135,11 @@ void Process::run() {
   // event bus for this process
   Event theEvent(passname_);
 
-  // Instantiate the event file factory.  
-  auto event_file_factory{framework::EventFileFactory::getInstance()}; 
+  // Instantiate the event file factory.
+  auto event_file_factory{framework::EventFileFactory::getInstance()};
+
+  // Instantiate the run header factory.
+  auto run_header_factory{framework::RunHeaderFactory::getInstance()};
 
   // Start by notifying everyone that modules processing is beginning
   conditions_.onProcessStart();
@@ -157,9 +160,10 @@ void Process::run() {
     }
     std::string outputFileName = outputFiles_.at(0);
 
-    //EventFile outFile(outputFileName, compressionSetting_);
-    auto outFile{event_file_factory->createEventFile(output_file_type_, outputFileName,
-       nullptr, true, true, compressionSetting_)};  
+    // EventFile outFile(outputFileName, compressionSetting_);
+    auto outFile{event_file_factory->createEventFile(
+        output_file_type_, outputFileName, nullptr, true, true,
+        compressionSetting_)};
 
     for (auto module : sequence_)
       module->onFileOpen(*(outFile.get()));
@@ -169,9 +173,11 @@ void Process::run() {
     for (auto rule : dropKeepRules_)
       outFile->addDrop(rule);
 
-    RunHeader runHeader(runForGeneration_);
-    runHeader.setRunStart(std::time(nullptr)); // set run starting
-    runHeader_ = &runHeader;           // give handle to run header to process
+    // RunHeader runHeader(runForGeneration_);
+    auto runHeader{run_header_factory->createRunHeader(output_file_type_,
+                                                      runForGeneration_)};
+    runHeader->setRunStart(std::time(nullptr)); // set run starting
+    runHeader_ = runHeader;            // give handle to run header to process
     outFile->writeRunHeader(runHeader); // add run header to file
 
     for (auto module : sequence_)
@@ -241,8 +247,8 @@ void Process::run() {
     for (auto module : sequence_)
       module->onFileClose(*(outFile.get()));
 
-    runHeader.setRunEnd(std::time(nullptr));
-    ldmx_log(info) << runHeader;
+    runHeader->setRunEnd(std::time(nullptr));
+    //ldmx_log(info) << runHeader;
     outFile->close();
 
   } else {
@@ -265,9 +271,9 @@ void Process::run() {
     int wasRun = -1;
     for (auto infilename : inputFiles_) {
 
-      //EventFile inFile(infilename);
-      auto inFile{event_file_factory->createEventFile(input_file_type_, 
-         infilename, nullptr, false, false, -1)};  
+      // EventFile inFile(infilename);
+      auto inFile{event_file_factory->createEventFile(
+          input_file_type_, infilename, nullptr, false, false, -1)};
 
       ldmx_log(info) << "Opening file " << infilename;
 
@@ -283,12 +289,11 @@ void Process::run() {
         // 2) this is the first input file
         if (!singleOutput or ifile == 0) {
           // setup new output file
-          //outFile = new EventFile(outputFiles_[ifile], &inFile, singleOutput,
+          // outFile = new EventFile(outputFiles_[ifile], &inFile, singleOutput,
           //                        compressionSetting_);
-          outFile = std::move(
-              event_file_factory->createEventFile(output_file_type_, 
-                outputFiles_[ifile], inFile.get(), true, singleOutput, 
-                compressionSetting_)); 
+          outFile = std::move(event_file_factory->createEventFile(
+              output_file_type_, outputFiles_[ifile], inFile.get(), true,
+              singleOutput, compressionSetting_));
           ifile++;
 
           // setup theEvent we will iterate over
@@ -332,10 +337,10 @@ void Process::run() {
           wasRun = theEvent.getEventHeader().getRun();
           try {
             auto runHeader = masterFile->getRunHeader(wasRun);
-            runHeader_ = &runHeader; // save current run header for later
+            runHeader_ = runHeader; // save current run header for later
             ldmx_log(info) << "Got new run header from '"
-                           << masterFile->getFileName() << "' ...\n"
-                           << runHeader;
+                           << masterFile->getFileName() << "' ...\n";
+                           //<< runHeader;
             for (auto module : sequence_)
               if (dynamic_cast<Producer *>(module))
                 dynamic_cast<Producer *>(module)->beforeNewRun(runHeader);
@@ -400,8 +405,8 @@ void Process::run() {
 
       if (outFile and !singleOutput) {
         outFile->close();
-        //delete outFile;
-        //outFile = nullptr;
+        // delete outFile;
+        // outFile = nullptr;
       }
 
     } // loop through input files
@@ -410,8 +415,8 @@ void Process::run() {
       // close outFile
       //  outFile would survive to here in single output mode
       outFile->close();
-      //delete outFile;
-      //outFile = nullptr;
+      // delete outFile;
+      // outFile = nullptr;
     }
 
   } // are there input files? if-else tree

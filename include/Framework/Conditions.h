@@ -19,6 +19,7 @@
 #include "Framework/Configure/Parameters.h" 
 #include "Framework/Logger.h"
 #include "Framework/ConditionsIOV.h"
+#include "Framework/AbstractRunHeader.h" 
 
 /*~~~~~~~~~~~~~~~~*/
 /*   C++ StdLib   */
@@ -32,7 +33,6 @@ namespace ldmx {
 class Process;
 class ConditionsObjectProvider;
 class ConditionsObject;
-class RunHeader;
 
 /**
  * @class Conditions
@@ -104,7 +104,7 @@ class Conditions {
   /**
    * Calls onNewRun for all ConditionsObjectProviders
    */
-  void onNewRun(RunHeader&);
+  void onNewRun(std::shared_ptr<framework::AbstractRunHeader> run_header);
   
   /** 
    * Create a ConditionsObjectProvider given the information

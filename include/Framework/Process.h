@@ -23,7 +23,7 @@ class TFile;
 class TDirectory;
 
 namespace framework {
-class EventFile; 
+class EventFile;
 }
 
 namespace ldmx {
@@ -73,7 +73,9 @@ public:
   /**
    * Get the pointer to the current run header, if defined
    */
-  const RunHeader *getRunHeader() const { return runHeader_; }
+  std::shared_ptr<const framework::AbstractRunHeader> getRunHeader() const {
+    return runHeader_;
+  }
 
   /**
    * Get a reference to the conditions system
@@ -141,7 +143,7 @@ private:
   std::string input_file_type_;
 
   /// Output file type
-  std::string output_file_type_; 
+  std::string output_file_type_;
 
   /** Processing pass name. */
   std::string passname_;
@@ -202,7 +204,7 @@ private:
   const EventHeader *eventHeader_{0};
 
   /** Pointer to the current RunHeader, used for Conditions information */
-  const RunHeader *runHeader_{0};
+  std::shared_ptr<const framework::AbstractRunHeader> runHeader_;
 
   /** TFile for histograms and other user products */
   TFile *histoTFile_{0};

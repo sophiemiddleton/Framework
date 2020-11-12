@@ -18,7 +18,7 @@
 #include "Framework/Histograms.h"
 #include "Framework/Logger.h"
 #include "Framework/NtupleManager.h"
-#include "Framework/RunHeader.h"
+#include "Framework/AbstractRunHeader.h"
 #include "Framework/StorageControl.h"
 
 /*~~~~~~~~~~~~~~~~*/
@@ -104,7 +104,7 @@ public:
    * action when the run being processed changes.
    * @param runHeader The RunHeader containing run information.
    */
-  virtual void onNewRun(const RunHeader &runHeader) {}
+  virtual void onNewRun(std::shared_ptr<const framework::AbstractRunHeader> runHeader) {}
 
   /**
    * Callback for the EventProcessor to take any necessary
@@ -281,7 +281,7 @@ public:
    * Handle allowing producers to modify run headers before the run begins
    * @param header RunHeader for Producer to add parameters to
    */
-  virtual void beforeNewRun(RunHeader &header) {}
+  virtual void beforeNewRun(std::shared_ptr<framework::AbstractRunHeader> header) {}
 };
 
 /**

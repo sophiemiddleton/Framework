@@ -53,13 +53,13 @@ class RandomNumberSeedService : public ConditionsObject, public ConditionsObject
    *
    * If we are using the run number as the master seed,
    * then we get the run number and set the master seed to it.
-   * 
+   *
    * No matter what, we put the master seed into the RunHeader
    * to be persisted into the output file.
    *
    * @param[in,out] header RunHeader for the new run that is starting
    */
-  virtual void onNewRun(RunHeader& header);
+  void onNewRun(std::shared_ptr<framework::AbstractRunHeader> run_header) final override;
 
   /** 
    * Access a given seed by name 

@@ -15,6 +15,7 @@
 /*~~~~~~~~~~~~~~~*/
 /*   Framework   */
 /*~~~~~~~~~~~~~~~*/
+#include "Framework/AbstractRunHeader.h" 
 #include "Framework/Configure/Parameters.h" 
 #include "Framework/Logger.h"
 #include "Framework/ConditionsIOV.h"
@@ -30,7 +31,6 @@ namespace ldmx {
 class Process;
 class ConditionsObjectProvider;
 class EventHeader;
-class RunHeader;
 
 /** Typedef for PluginFactory use. */
 typedef ConditionsObjectProvider* 
@@ -99,8 +99,7 @@ class ConditionsObjectProvider {
    * Callback for the ConditionsObjectProvider to take any necessary
    * action when the processing of events starts for a given run.
    */
-  virtual void onNewRun(RunHeader&) {
-  }
+  virtual void onNewRun(std::shared_ptr<framework::AbstractRunHeader> run_header) {};
 
   /**
    * Get the list of conditions objects available from this provider.

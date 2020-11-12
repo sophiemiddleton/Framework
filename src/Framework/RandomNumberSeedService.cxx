@@ -39,13 +39,13 @@ RandomNumberSeedService::RandomNumberSeedService(const std::string& name, const 
   }
 }
 
-void RandomNumberSeedService::onNewRun(RunHeader& rh) {
+void RandomNumberSeedService::onNewRun(std::shared_ptr<framework::AbstractRunHeader> run_header) {
   if (seedMode_==SEED_RUN) {
-    masterSeed_=rh.getRunNumber();
+    masterSeed_=run_header->getRunNumber();
     initialized_ = true;
   }
   std::string key="RandomNumberMasterSeed["+process().getPassName()+"]";
-  rh.setIntParameter(key,int(masterSeed_));
+  run_header->setIntParameter(key,int(masterSeed_));
 }
 
 
