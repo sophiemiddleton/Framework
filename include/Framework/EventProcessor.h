@@ -275,7 +275,7 @@ public:
    * Process the event and put new data products into it.
    * @param event The Event to process.
    */
-  virtual void produce(Event &event) = 0;
+  virtual void produce(framework::Event &event) = 0;
 
   /**
    * Handle allowing producers to modify run headers before the run begins
@@ -318,7 +318,7 @@ public:
    * Process the event and make histograms or summaries
    * @param event The Event to analyze
    */
-  virtual void analyze(const Event &event) = 0;
+  virtual void analyze(const framework::Event &event) = 0;
 };
 
 } // namespace ldmx
