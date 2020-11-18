@@ -31,7 +31,7 @@ public:
    * @param[in] detector_name The detector name that was used in this run.
    */
   void setDetectorName(const std::string &detector_name) final override {
-    run_header->setDetectorName(detector_name); 
+    run_header->setDetectorName(detector_name);
   }
 
   /**
@@ -40,7 +40,7 @@ public:
    * @param[in] description A short description of the run.
    */
   void setDescription(const std::string &description) final override {
-    run_header->setDescription(description); 
+    run_header->setDescription(description);
   }
 
   /**
@@ -51,9 +51,9 @@ public:
    */
   void setStringParameter(const std::string &name,
                           std::string value) final override {
-    run_header->parameters().setValue(name, value); 
-  } 
-  
+    run_header->parameters().setValue(name, value);
+  }
+
   /**
    * Set an int parameter value.
    *
@@ -61,9 +61,9 @@ public:
    * @param value The value of the parameter.
    */
   void setIntParameter(const std::string &name, int value) final override {
-    run_header->parameters().setValue(name, value); 
-  } 
-  
+    run_header->parameters().setValue(name, value);
+  }
+
   /**
    * Set a float parameter value.
    *
@@ -71,10 +71,15 @@ public:
    * @param value The parameter value.
    */
   virtual void setFloatParameter(const std::string &name, float value) {
-    run_header->parameters().setValue(name, value); 
+    run_header->parameters().setValue(name, value);
   }
 
-  /// @return a raw pointer to the underlying header object
+  /**
+   * Return a raw pointer to the underlying IMPL::LCRunHeader object.
+   *
+   * @return a raw pointer to the underlying IMPL::LCRunHeader object if it
+   * exists.
+   */
   std::any get() final override { return run_header.get(); }
 
   /**
