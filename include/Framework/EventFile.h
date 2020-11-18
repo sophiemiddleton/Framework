@@ -118,6 +118,9 @@ private:
   // void importRunHeaders();
 
 protected:
+  /// The event container.
+  Event* event_{nullptr}; 
+
   /// The name of the output file
   std::string filename_;
 
