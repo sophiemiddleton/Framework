@@ -17,6 +17,8 @@
 #include "TROOT.h"
 #include <iostream>
 
+#include "Framework/LcioEvent.h" 
+
 namespace ldmx {
 
 Process::Process(const Parameters &configuration) : conditions_{*this} {
@@ -116,16 +118,14 @@ Process::~Process() {
 
 void Process::run() {
 
-  // set up the logging for this run
+  // Set up the logging for this run. If logFileName_ is empty, nothing is
+  // logged to a file.
   logging::open(logging::convertLevel(termLevelInt_),
-                logging::convertLevel(fileLevelInt_),
-                logFileName_ // if this is empty string, no file is logged to
-  );
+                logging::convertLevel(fileLevelInt_), logFileName_);
 
-  // create a logger for this process
-  //      other objects will have their own channels
-  //      the ldmx_log macro uses a variable called theLog_,
-  //      so we are going to name it that for now.
+  // Create a logger for this process. Other objects will have their own
+  // channels the ldmx_log macro uses a variable called theLog_, so we are going
+  // to name it that for now.
   auto theLog_{logging::makeLogger("Process")};
 
   // Counter to keep track of the number of events that have been
@@ -133,7 +133,8 @@ void Process::run() {
   auto n_events_processed{0};
 
   // event bus for this process
-  Event theEvent(passname_);
+  //framework::Event theEvent(passname_);
+  framework::LcioEvent theEvent(passname_); 
 
   // Instantiate the event file factory.
   auto event_file_factory{framework::EventFileFactory::getInstance()};
@@ -175,9 +176,9 @@ void Process::run() {
 
     // RunHeader runHeader(runForGeneration_);
     auto runHeader{run_header_factory->createRunHeader(output_file_type_,
-                                                      runForGeneration_)};
+                                                       runForGeneration_)};
     runHeader->setRunStart(std::time(nullptr)); // set run starting
-    runHeader_ = runHeader;            // give handle to run header to process
+    runHeader_ = runHeader;             // give handle to run header to process
     outFile->writeRunHeader(runHeader); // add run header to file
 
     for (auto module : sequence_)
@@ -248,7 +249,7 @@ void Process::run() {
       module->onFileClose(*(outFile.get()));
 
     runHeader->setRunEnd(std::time(nullptr));
-    //ldmx_log(info) << runHeader;
+    // ldmx_log(info) << runHeader;
     outFile->close();
 
   } else {
@@ -340,7 +341,7 @@ void Process::run() {
             runHeader_ = runHeader; // save current run header for later
             ldmx_log(info) << "Got new run header from '"
                            << masterFile->getFileName() << "' ...\n";
-                           //<< runHeader;
+            //<< runHeader;
             for (auto module : sequence_)
               if (dynamic_cast<Producer *>(module))
                 dynamic_cast<Producer *>(module)->beforeNewRun(runHeader);
