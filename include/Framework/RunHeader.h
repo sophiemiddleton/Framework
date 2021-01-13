@@ -1,5 +1,5 @@
-#ifndef EVENT_RUN_HEADER_H_
-#define EVENT_RUN_HEADER_H_
+#ifndef FRAMEWORK_EVENT_RUNHEADER_H_
+#define FRAMEWORK_EVENT_RUNHEADER_H_
 
 /*~~~~~~~~~~*/
 /*   ROOT   */
@@ -17,11 +17,10 @@
 /*~~~~~~~~~~~~~~~*/
 #include "Framework/Version.h"
 
-namespace ldmx {
+namespace framework {
 
 class RunHeader {
-
-public:
+ public:
   /**
    * Constructor.
    *
@@ -182,17 +181,17 @@ public:
    * Needs to be here and labeled as friend for
    * it to be compatible with Boost logging.
    *
-   * @see ldmx::RunHeader::stream
+   * @see framework::RunHeader::stream
    * @param[in] s ostream to write to
    * @param[in] h RunHeader to write out
    * @return modified ostream
    */
-  friend std::ostream &operator<<(std::ostream &s, const ldmx::RunHeader &h) {
+  friend std::ostream &operator<<(std::ostream &s, const framework::RunHeader &h) {
     h.stream(s);
     return s;
   }
 
-private:
+ private:
   /** Run number. */
   int runNumber_{0};
 
@@ -225,8 +224,8 @@ private:
 
   ClassDef(RunHeader, 3);
 
-}; // RunHeader
+};  // RunHeader
 
-} // namespace ldmx
+}  // namespace framework
 
-#endif // _EVENT_RUN_HEADER_H_
+#endif  // _FRAMEWORK_EVENT_RUN_HEADER_H_

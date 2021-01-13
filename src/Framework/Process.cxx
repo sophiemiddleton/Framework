@@ -1,5 +1,6 @@
 
 #include "Framework/Process.h"
+#include <iostream>
 #include "Framework/Event.h"
 #include "Framework/EventFile.h"
 #include "Framework/EventProcessor.h"
@@ -17,10 +18,9 @@
 /*~~~~~~~~~~~~*/
 #include "DD4hep/Detector.h" 
 
-namespace ldmx {
+namespace framework {
 
-Process::Process(const Parameters &configuration) : conditions_{*this} {
-
+Process::Process(const framework::config::Parameters &configuration) : conditions_{*this} {
   // Get the path to the compact description of the detector. This is used 
   // to build the in memory detector description.  If the path isn't empty, 
   // attempt to load the detector into memory.  The compact loader provided 
@@ -53,8 +53,7 @@ Process::Process(const Parameters &configuration) : conditions_{*this} {
   eventHeader_ = 0;
 
   auto run{configuration.getParameter<int>("run", -1)};
-  if (run > 0)
-    runForGeneration_ = run;
+  if (run > 0) runForGeneration_ = run;
 
   auto libs{
       configuration.getParameter<std::vector<std::string>>("libraries", {})};
@@ -71,12 +70,13 @@ Process::Process(const Parameters &configuration) : conditions_{*this} {
   }
 
   auto sequence{
-      configuration.getParameter<std::vector<Parameters>>("sequence", {})};
+      configuration.getParameter<std::vector<framework::config::Parameters>>("sequence", {})};
   if (sequence.empty() &&
       configuration.getParameter<bool>("testingMode", false)) {
     EXCEPTION_RAISE(
-        "NoSeq", "No sequence has been defined. What should I be doing?\nUse "
-                 "p.sequence to tell me what processors to run.");
+        "NoSeq",
+        "No sequence has been defined. What should I be doing?\nUse "
+        "p.sequence to tell me what processors to run.");
   }
   for (auto proc : sequence) {
     auto className{proc.getParameter<std::string>("className")};
@@ -91,7 +91,7 @@ Process::Process(const Parameters &configuration) : conditions_{*this} {
               "'. Did you load the library that this class is apart of?");
     }
     auto histograms{
-        proc.getParameter<std::vector<Parameters>>("histograms", {})};
+        proc.getParameter<std::vector<framework::config::Parameters>>("histograms", {})};
     if (!histograms.empty()) {
       ep->getHistoDirectory();
       ep->createHistograms(histograms);
@@ -101,10 +101,9 @@ Process::Process(const Parameters &configuration) : conditions_{*this} {
   }
 
   auto conditionsObjectProviders{
-      configuration.getParameter<std::vector<Parameters>>(
+      configuration.getParameter<std::vector<framework::config::Parameters>>(
           "conditionsObjectProviders", {})};
   for (auto cop : conditionsObjectProviders) {
-
     auto className{cop.getParameter<std::string>("className")};
     auto objectName{cop.getParameter<std::string>("objectName")};
     auto tagName{cop.getParameter<std::string>("tagName")};
@@ -121,11 +120,10 @@ Process::~Process() {
 }
 
 void Process::run() {
-
   // set up the logging for this run
   logging::open(logging::convertLevel(termLevelInt_),
                 logging::convertLevel(fileLevelInt_),
-                logFileName_ // if this is empty string, no file is logged to
+                logFileName_  // if this is empty string, no file is logged to
   );
 
   // create a logger for this process
@@ -143,13 +141,11 @@ void Process::run() {
 
   // Start by notifying everyone that modules processing is beginning
   conditions_.onProcessStart();
-  for (auto module : sequence_)
-    module->onProcessStart();
+  for (auto module : sequence_) module->onProcessStart();
 
   // If we have no input files, but do have an event number, run for
   // that number of events and generate an output file.
   if (inputFiles_.empty() && eventLimit_ > 0) {
-
     if (outputFiles_.empty()) {
       EXCEPTION_RAISE("InvalidConfig",
                       "No input files or output files were given.");
@@ -162,18 +158,16 @@ void Process::run() {
 
     EventFile outFile(outputFileName, compressionSetting_);
 
-    for (auto module : sequence_)
-      module->onFileOpen(outFile);
+    for (auto module : sequence_) module->onFileOpen(outFile);
 
     outFile.setupEvent(&theEvent);
 
-    for (auto rule : dropKeepRules_)
-      outFile.addDrop(rule);
+    for (auto rule : dropKeepRules_) outFile.addDrop(rule);
 
     RunHeader runHeader(runForGeneration_);
-    runHeader.setRunStart(std::time(nullptr)); // set run starting
-    runHeader_ = &runHeader;           // give handle to run header to process
-    outFile.writeRunHeader(runHeader); // add run header to file
+    runHeader.setRunStart(std::time(nullptr));  // set run starting
+    runHeader_ = &runHeader;            // give handle to run header to process
+    outFile.writeRunHeader(runHeader);  // add run header to file
 
     for (auto module : sequence_)
       if (dynamic_cast<Producer *>(module))
@@ -182,12 +176,11 @@ void Process::run() {
     // now run header has been modified by Producers, so it is valid to read
     // from
     conditions_.onNewRun(runHeader);
-    for (auto module : sequence_)
-      module->onNewRun(runHeader);
+    for (auto module : sequence_) module->onNewRun(runHeader);
 
-    int numTries = 0; // number of tries for the current event number
+    int numTries = 0;  // number of tries for the current event number
     while (n_events_processed < eventLimit_) {
-      EventHeader &eh = theEvent.getEventHeader();
+      framework::EventHeader &eh = theEvent.getEventHeader();
       eh.setRun(runForGeneration_);
       eh.setEventNumber(n_events_processed + 1);
       eh.setTimestamp(TTimeStamp());
@@ -230,17 +223,16 @@ void Process::run() {
                     .keepEvent() /*ignore storage control if event aborted*/);
 
       if (not eventAborted or numTries >= maxTries_) {
-        n_events_processed++;                // increment events made
-        NtupleManager::getInstance().fill(); // fill ntuples
-        numTries = 0;                        // reset try counter
+        n_events_processed++;                 // increment events made
+        NtupleManager::getInstance().fill();  // fill ntuples
+        numTries = 0;                         // reset try counter
       }
 
       NtupleManager::getInstance().clear();
       theEvent.Clear();
     }
 
-    for (auto module : sequence_)
-      module->onFileClose(outFile);
+    for (auto module : sequence_) module->onFileClose(outFile);
 
     runHeader.setRunEnd(std::time(nullptr));
     ldmx_log(info) << runHeader;
@@ -265,18 +257,15 @@ void Process::run() {
     int ifile = 0;
     int wasRun = -1;
     for (auto infilename : inputFiles_) {
-
       EventFile inFile(infilename);
 
       ldmx_log(info) << "Opening file " << infilename;
 
-      for (auto module : sequence_)
-        module->onFileOpen(inFile);
+      for (auto module : sequence_) module->onFileOpen(inFile);
 
       // configure event file that will be iterated over
       EventFile *masterFile;
       if (!outputFiles_.empty()) {
-
         // setup new output file if either
         // 1) we are not in single output mode
         // 2) this is the first input file
@@ -295,15 +284,14 @@ void Process::run() {
                                            outputFiles_[ifile]);
           }
 
-          for (auto rule : dropKeepRules_)
-            outFile->addDrop(rule);
+          for (auto rule : dropKeepRules_) outFile->addDrop(rule);
 
         } else {
           // all other input files
           outFile->updateParent(&inFile);
           masterFile = outFile;
 
-        } // check if in singleOutput mode
+        }  // check if in singleOutput mode
 
       } else {
         // empty output file list, use inputFile as master file
@@ -327,7 +315,7 @@ void Process::run() {
           wasRun = theEvent.getEventHeader().getRun();
           try {
             auto runHeader = masterFile->getRunHeader(wasRun);
-            runHeader_ = &runHeader; // save current run header for later
+            runHeader_ = &runHeader;  // save current run header for later
             ldmx_log(info) << "Got new run header from '"
                            << masterFile->getFileName() << "' ...\n"
                            << runHeader;
@@ -337,9 +325,8 @@ void Process::run() {
             // now run header has been modified by Producers, so it is valid to
             // read from
             conditions_.onNewRun(runHeader);
-            for (auto module : sequence_)
-              module->onNewRun(runHeader);
-          } catch (const Exception &) {
+            for (auto module : sequence_) module->onNewRun(runHeader);
+          } catch (const framework::exception::Exception &) {
             ldmx_log(warn) << "Run header for run " << wasRun
                            << " was not found!";
           }
@@ -368,12 +355,11 @@ void Process::run() {
           }
         }
 
-        if (not eventAborted)
-          NtupleManager::getInstance().fill();
+        if (not eventAborted) NtupleManager::getInstance().fill();
         NtupleManager::getInstance().clear();
 
         n_events_processed++;
-      } // loop through events
+      }  // loop through events
 
       if (eventLimit_ > 0 && n_events_processed == eventLimit_) {
         ldmx_log(info) << "Reached event limit of " << eventLimit_ << " events";
@@ -385,8 +371,7 @@ void Process::run() {
 
       ldmx_log(info) << "Closing file " << infilename;
 
-      for (auto module : sequence_)
-        module->onFileClose(inFile);
+      for (auto module : sequence_) module->onFileClose(inFile);
 
       inFile.close();
 
@@ -399,7 +384,7 @@ void Process::run() {
         outFile = nullptr;
       }
 
-    } // loop through input files
+    }  // loop through input files
 
     if (outFile) {
       // close outFile
@@ -409,7 +394,7 @@ void Process::run() {
       outFile = nullptr;
     }
 
-  } // are there input files? if-else tree
+  }  // are there input files? if-else tree
 
   // close up histogram file if anything was put into it
   if (histoTFile_) {
@@ -434,8 +419,7 @@ int Process::getRunNumber() const {
 TDirectory *Process::makeHistoDirectory(const std::string &dirName) {
   auto owner{openHistoFile()};
   TDirectory *child = owner->mkdir((char *)dirName.c_str());
-  if (child)
-    child->cd();
+  if (child) child->cd();
   return child;
 }
 
@@ -458,4 +442,4 @@ TDirectory *Process::openHistoFile() {
 
   return owner;
 }
-} // namespace ldmx
+}  // namespace framework

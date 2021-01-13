@@ -22,7 +22,7 @@
 class TFile;
 class TDirectory;
 
-namespace ldmx {
+namespace framework {
 
 class EventProcessor;
 class EventFile;
@@ -33,13 +33,12 @@ class Event;
  * @brief Class which represents the process under execution.
  */
 class Process {
-
  public:
   /**
    * Class constructor.
    * @param configuration Parameters to configure process with
    */
-  Process(const Parameters &configuration);
+  Process(const framework::config::Parameters &configuration);
 
   /**
    * Class Destructor
@@ -65,7 +64,7 @@ class Process {
   /**
    * Get the pointer to the current event header, if defined
    */
-  const EventHeader *getEventHeader() const { return eventHeader_; }
+  const framework::EventHeader *getEventHeader() const { return eventHeader_; }
 
   /**
    * Get a reference to the conditions system
@@ -106,7 +105,7 @@ class Process {
   /**
    * Set the pointer to the current event header, used only for tests
    */
-  void setEventHeader(EventHeader *h) { eventHeader_ = h; }
+  void setEventHeader(framework::EventHeader *h) { eventHeader_ = h; }
 
   /**
    * Get a dummy process
@@ -190,7 +189,7 @@ class Process {
   std::string histoFilename_;
 
   /// Pointer to the current EventHeader, used for Conditions information 
-  const EventHeader *eventHeader_;
+  const framework::EventHeader *eventHeader_{0};
 
   /// Pointer to the current RunHeader, used for Conditions information 
   const RunHeader *runHeader_{0};
@@ -205,6 +204,6 @@ class Process {
  * to ldmx-app.
  */
 typedef std::unique_ptr<Process> ProcessHandle;
-} // namespace ldmx
+}  // namespace framework
 
 #endif
