@@ -49,7 +49,7 @@ class TestProducer : public Producer {
     createRunHeader_ = p.getParameter<bool>("createRunHeader");
   }
 
-  void beforeNewRun(framework::RunHeader& header) final override {
+  void beforeNewRun(ldmx::RunHeader& header) final override {
     if (not createRunHeader_) return;
     header.setIntParameter("Should Be Run Number", header.getRunNumber());
     return;
@@ -60,7 +60,7 @@ class TestProducer : public Producer {
 
     REQUIRE(i_event > 0);
 
-    std::vector<recon::event::CalorimeterHit> caloHits;
+    std::vector<ldmx::CalorimeterHit> caloHits;
     for (int i = 0; i < i_event; i++) {
       caloHits.emplace_back();
       caloHits.back().setID(i_event * 10 + i);
@@ -68,10 +68,10 @@ class TestProducer : public Producer {
 
     REQUIRE_NOTHROW(event.add("TestCollection", caloHits));
 
-    hcal::event::HcalHit maxPEHit;
+    ldmx::HcalHit maxPEHit;
     maxPEHit.setID(i_event);
 
-    hcal::event::HcalVetoResult res;
+    ldmx::HcalVetoResult res;
     res.setMaxPEHit(maxPEHit);
     res.setVetoResult(i_event % 2 == 0);
 
@@ -110,9 +110,9 @@ class TestAnalyzer : public Analyzer {
 
     REQUIRE(i_event > 0);
 
-    std::vector<recon::event::CalorimeterHit> caloHits;
-    REQUIRE_NOTHROW(caloHits =
-                        event.getCollection<recon::event::CalorimeterHit>("TestCollection"));
+    std::vector<ldmx::CalorimeterHit> caloHits;
+    REQUIRE_NOTHROW(
+        caloHits = event.getCollection<ldmx::CalorimeterHit>("TestCollection"));
 
     CHECK(caloHits.size() == i_event);
     for (unsigned int i = 0; i < caloHits.size(); i++) {
@@ -120,8 +120,9 @@ class TestAnalyzer : public Analyzer {
       test_hist_->Fill(caloHits.at(i).getID());
     }
 
-    hcal::event::HcalVetoResult vetoRes;
-    REQUIRE_NOTHROW(vetoRes = event.getObject<hcal::event::HcalVetoResult>("TestObject"));
+    ldmx::HcalVetoResult vetoRes;
+    REQUIRE_NOTHROW(vetoRes =
+                        event.getObject<ldmx::HcalVetoResult>("TestObject"));
 
     auto maxPEHit{vetoRes.getMaxPEHit()};
 
@@ -263,12 +264,12 @@ class isGoodEventFile : public Catch::MatcherBase<std::string> {
       return false;
     }
 
-    // Event tree should _always_ have the framework::EventHeader
-    TTreeReaderValue<framework::EventHeader> header(events, "EventHeader");
+    // Event tree should _always_ have the ldmx::EventHeader
+    TTreeReaderValue<ldmx::EventHeader> header(events, "EventHeader");
 
     if (existCollection_) {
       // make sure collection matches pattern
-      TTreeReaderValue<std::vector<recon::event::CalorimeterHit>> collection(
+      TTreeReaderValue<std::vector<ldmx::CalorimeterHit>> collection(
           events, ("TestCollection_" + pass_).c_str());
       while (events.Next()) {
         if (collection->size() != header->getEventNumber()) {
@@ -294,8 +295,8 @@ class isGoodEventFile : public Catch::MatcherBase<std::string> {
 
     if (existObject_) {
       // make sure object matches pattern
-      TTreeReaderValue<hcal::event::HcalVetoResult> object(events,
-                                              ("TestObject_" + pass_).c_str());
+      TTreeReaderValue<ldmx::HcalVetoResult> object(
+          events, ("TestObject_" + pass_).c_str());
       while (events.Next()) {
         if (object->getMaxPEHit().getID() != header->getEventNumber()) {
           f->Close();
@@ -318,7 +319,7 @@ class isGoodEventFile : public Catch::MatcherBase<std::string> {
       return false;
     }
 
-    TTreeReaderValue<framework::RunHeader> runHeader(runs, "RunHeader");
+    TTreeReaderValue<ldmx::RunHeader> runHeader(runs, "RunHeader");
 
     while (runs.Next()) {
       if (runHeader->getRunNumber() !=
@@ -411,7 +412,7 @@ DECLARE_ANALYZER_NS(framework::test, TestAnalyzer)
  * Assumptions:
  *  - Any vector of objects behaves like a vector of CalorimeterHits when viewed
  * from core
- *  - Any object behaves like a hcal::event::HcalVetoResult when viewed from core
+ *  - Any object behaves like a ldmx::HcalVetoResult when viewed from core
  *
  * What does this even test?
  *  - Event::add an object and a vector of objects (changing size and content)
@@ -449,12 +450,14 @@ TEST_CASE("Core Framework Functionality", "[Framework][functionality]") {
   process["run"] = -1;                  // will be changed in some branches
 
   std::map<std::string, std::any> producerParameters;
-  producerParameters["className"] = std::string("framework::test::TestProducer");
+  producerParameters["className"] =
+      std::string("framework::test::TestProducer");
   producerParameters["instanceName"] = std::string("TestProducer");
   producerParameters["createRunHeader"] = false;
 
   std::map<std::string, std::any> analyzerParameters;
-  analyzerParameters["className"] = std::string("framework::test::TestAnalyzer");
+  analyzerParameters["className"] =
+      std::string("framework::test::TestAnalyzer");
   analyzerParameters["instanceName"] = std::string("TestAnalyzer");
 
   // parameters classes to wrap parameters in

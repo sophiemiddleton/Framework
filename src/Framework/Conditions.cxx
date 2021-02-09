@@ -7,10 +7,9 @@ namespace framework {
 
 Conditions::Conditions(Process& p) : process_{p} {}
 
-void Conditions::createConditionsObjectProvider(const std::string& classname,
-                                                const std::string& objname,
-                                                const std::string& tagname,
-                                                const framework::config::Parameters& params) {
+void Conditions::createConditionsObjectProvider(
+    const std::string& classname, const std::string& objname,
+    const std::string& tagname, const framework::config::Parameters& params) {
   ConditionsObjectProvider* cop =
       PluginFactory::getInstance().createConditionsObjectProvider(
           classname, objname, tagname, params, process_);
@@ -39,7 +38,7 @@ void Conditions::onProcessEnd() {
   for (auto ptr : providerMap_) ptr.second->onProcessEnd();
 }
 
-void Conditions::onNewRun(RunHeader& rh) {
+void Conditions::onNewRun(ldmx::RunHeader& rh) {
   for (auto ptr : providerMap_) ptr.second->onNewRun(rh);
 }
 
@@ -54,7 +53,7 @@ ConditionsIOV Conditions::getConditionIOV(
 
 const ConditionsObject* Conditions::getConditionPtr(
     const std::string& condition_name) {
-  const framework::EventHeader& context = *(process_.getEventHeader());
+  const ldmx::EventHeader& context = *(process_.getEventHeader());
   auto cacheptr = cache_.find(condition_name);
 
   if (cacheptr == cache_.end()) {

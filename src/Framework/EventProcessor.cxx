@@ -18,7 +18,7 @@ Conditions &EventProcessor::getConditions() const {
   return process_.getConditions();
 }
 
-const framework::EventHeader &EventProcessor::getEventHeader() const {
+const ldmx::EventHeader &EventProcessor::getEventHeader() const {
   return *(process_.getEventHeader());
 }
 
@@ -47,7 +47,8 @@ void EventProcessor::declare(const std::string &classname, int classtype,
                                                       maker);
 }
 
-void EventProcessor::createHistograms(const std::vector<framework::config::Parameters> &histos) {
+void EventProcessor::createHistograms(
+    const std::vector<framework::config::Parameters> &histos) {
   for (auto const &h : histos) {
     auto name{h.getParameter<std::string>("name")};
     auto xLabel{h.getParameter<std::string>("xlabel")};
