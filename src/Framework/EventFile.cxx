@@ -3,19 +3,18 @@
 #include "TTreeReader.h"
 
 // LDMX
-#include "Event/EventConstants.h"
 #include "Framework/Event.h"
 #include "Framework/EventFile.h"
 #include "Framework/Exception/Exception.h"
 #include "Framework/RunHeader.h"
 
-namespace ldmx {
+namespace framework {
 
-EventFile::EventFile(const std::string &filename, EventFile *parent,
-                     bool isOutputFile, bool isSingleOutput,
-                     int compressionSetting)
+EventFile::EventFile(const framework::config::Parameters &params,
+                     const std::string &filename, EventFile *parent,
+                     bool isOutputFile, bool isSingleOutput, bool isLoopable)
     : fileName_(filename), parent_(parent), isOutputFile_(isOutputFile),
-      isSingleOutput_(isSingleOutput) {
+      isSingleOutput_(isSingleOutput), isLoopable_(isLoopable) {
 
   if (isOutputFile_) {
     // we are writting out so open the file and make sure it is writable
@@ -29,7 +28,8 @@ EventFile::EventFile(const std::string &filename, EventFile *parent,
     //  Check out the TFile constructor for explanation of how this integer is
     //  built Short Reference: setting = 100*algorithem + level algorithm = 0
     //  ==> use global default
-    file_->SetCompressionSettings(compressionSetting);
+    file_->SetCompressionSettings(
+        params.getParameter<int>("compressionSetting", 9));
 
     if (parent_) {
       // output file when there are input files
@@ -56,11 +56,13 @@ EventFile::EventFile(const std::string &filename, EventFile *parent,
                                        "' is not readable or does not exist.");
     }
 
-    tree_ = (TTree *)(file_->Get(EventConstants::EVENT_TREE_NAME.c_str()));
+    // Get the tree name from the configuration
+    auto tree_name{params.getParameter<std::string>("tree_name")};
+    tree_ = static_cast<TTree *>(file_->Get(tree_name.c_str()));
     if (!tree_) {
-      EXCEPTION_RAISE("FileError",
-                      "File '" + fileName_ + "' does not have a TTree named '" +
-                          EventConstants::EVENT_TREE_NAME + "' in it.");
+      EXCEPTION_RAISE("FileError", "File '" + fileName_ +
+                                       "' does not have a TTree named '" +
+                                       tree_name + "' in it.");
     }
     entries_ = tree_->GetEntriesFast();
   }
@@ -68,18 +70,20 @@ EventFile::EventFile(const std::string &filename, EventFile *parent,
   importRunHeaders();
 }
 
-EventFile::EventFile(const std::string &filename)
-    : EventFile(filename, nullptr, false, false, -1) {}
+EventFile::EventFile(const framework::config::Parameters &params, 
+    const std::string &filename, bool isLoopable)
+    : EventFile(params, filename, nullptr, false, false, isLoopable) {}
 
-EventFile::EventFile(const std::string &filename, int compressionSetting)
-    : EventFile(filename, nullptr, true, true, compressionSetting) {}
+EventFile::EventFile(const framework::config::Parameters &params,
+                     const std::string &filename)
+    : EventFile(params, filename, nullptr, false, false, false) {}
 
-EventFile::EventFile(const std::string &filename, EventFile *parent,
-                     bool isSingleOutput, int compressionSetting)
-    : EventFile(filename, parent, true, isSingleOutput, compressionSetting) {}
+EventFile::EventFile(const framework::config::Parameters &params,
+                     const std::string &filename, EventFile *parent,
+                     bool isSingleOutput)
+    : EventFile(params, filename, parent, true, isSingleOutput, false) {}
 
 void EventFile::addDrop(const std::string &rule) {
-
   int offset;
   bool isKeep = false, isDrop = false, isIgnore = false;
   size_t i = rule.find("keep");
@@ -142,7 +146,6 @@ void EventFile::addDrop(const std::string &rule) {
 }
 
 bool EventFile::nextEvent(bool storeCurrentEvent) {
-
   if (ientry_ < 0 && parent_) {
     if (!parent_->tree_) {
       EXCEPTION_RAISE("EventFile", "No event tree in the file");
@@ -195,12 +198,14 @@ bool EventFile::nextEvent(bool storeCurrentEvent) {
     return true;
 
   } else {
-
     // if we are reading, move the pointer
     if (!isOutputFile_) {
-
       if (ientry_ + 1 >= entries_) {
-        return false;
+        if (isLoopable_) {
+          // reset the event counter: reuse events from start of pileup tree
+          ientry_ = -1;
+        } else
+          return false;
       }
 
       ientry_++;
@@ -237,13 +242,20 @@ void EventFile::setupEvent(Event *evt) {
   }
 }
 
-void EventFile::updateParent(EventFile *parent) {
+int EventFile::skipToEvent(int offset) {
+  // make sure the event number exists,
+  // -1 to account for stepping in nextEvent()
+  ientry_ = offset % entries_ - 1;
+  if (!this->nextEvent())
+    return -1;
+  return ientry_;
+}
 
+void EventFile::updateParent(EventFile *parent) {
   parent_ = parent;
 
   TTree *parentTree = (TTree *)parent_->file_->Get("LDMX_Events");
   if (parentTree) {
-
     // Enter output file
     file_->cd();
 
@@ -294,9 +306,8 @@ void EventFile::close() {
     runTree = new TTree("LDMX_Run", "LDMX run header");
 
     // create the branch on this tree
-    RunHeader *theHandle = nullptr;
-    runTree->Branch("RunHeader", EventConstants::RUN_HEADER.c_str(), &theHandle,
-                    32000, 3);
+    ldmx::RunHeader *theHandle = nullptr;
+    runTree->Branch("RunHeader", "ldmx::RunHeader", &theHandle, 32000, 3);
 
     // copy over the run headers into the tree
     for (auto &[num, header_pair] : runMap_) {
@@ -313,8 +324,7 @@ void EventFile::close() {
   file_->Close();
 }
 
-void EventFile::writeRunHeader(RunHeader &runHeader) {
-
+void EventFile::writeRunHeader(ldmx::RunHeader &runHeader) {
   int runNumber = runHeader.getRunNumber();
 
   if (runMap_.find(runNumber) != runMap_.end()) {
@@ -327,7 +337,7 @@ void EventFile::writeRunHeader(RunHeader &runHeader) {
   return;
 }
 
-RunHeader &EventFile::getRunHeader(int runNumber) {
+ldmx::RunHeader &EventFile::getRunHeader(int runNumber) {
   if (runMap_.find(runNumber) != runMap_.end()) {
     return *(runMap_.at(runNumber).second);
   } else {
@@ -338,7 +348,6 @@ RunHeader &EventFile::getRunHeader(int runNumber) {
 }
 
 void EventFile::importRunHeaders() {
-
   // choose which file to import from
   auto theImportFile{file_}; // if this is an input file
   if (isOutputFile_ and parent_ and parent_->file_)
@@ -350,15 +359,15 @@ void EventFile::importRunHeaders() {
   if (theImportFile) {
     // the file exist
     TTreeReader oldRunTree("LDMX_Run", theImportFile);
-    TTreeReaderValue<RunHeader> oldRunHeader(oldRunTree, "RunHeader");
+    TTreeReaderValue<ldmx::RunHeader> oldRunHeader(oldRunTree, "RunHeader");
     // TODO check that setup went correctly
     while (oldRunTree.Next()) {
       // copy input run tree into run map
       runMap_[oldRunHeader->getRunNumber()] =
-          std::make_pair(true, new RunHeader(*oldRunHeader));
+          std::make_pair(true, new ldmx::RunHeader(*oldRunHeader));
     }
   }
 
   return;
 }
-} // namespace ldmx
+} // namespace framework
