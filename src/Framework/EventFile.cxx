@@ -10,13 +10,12 @@
 
 namespace framework {
 
-EventFile::EventFile(const std::string &filename, EventFile *parent,
-                     bool isOutputFile, bool isSingleOutput,
-                     int compressionSetting)
-    : fileName_(filename),
-      parent_(parent),
-      isOutputFile_(isOutputFile),
-      isSingleOutput_(isSingleOutput) {
+EventFile::EventFile(const framework::config::Parameters &params,
+                     const std::string &filename, EventFile *parent,
+                     bool isOutputFile, bool isSingleOutput, bool isLoopable)
+    : fileName_(filename), parent_(parent), isOutputFile_(isOutputFile),
+      isSingleOutput_(isSingleOutput), isLoopable_(isLoopable) {
+
   if (isOutputFile_) {
     // we are writting out so open the file and make sure it is writable
     file_ = new TFile(fileName_.c_str(), "RECREATE");
@@ -29,7 +28,8 @@ EventFile::EventFile(const std::string &filename, EventFile *parent,
     //  Check out the TFile constructor for explanation of how this integer is
     //  built Short Reference: setting = 100*algorithem + level algorithm = 0
     //  ==> use global default
-    file_->SetCompressionSettings(compressionSetting);
+    file_->SetCompressionSettings(
+        params.getParameter<int>("compressionSetting", 9));
 
     if (parent_) {
       // output file when there are input files
@@ -56,11 +56,13 @@ EventFile::EventFile(const std::string &filename, EventFile *parent,
                                        "' is not readable or does not exist.");
     }
 
-    tree_ = (TTree *)(file_->Get("LDMX_Events"));
+    // Get the tree name from the configuration
+    auto tree_name{params.getParameter<std::string>("tree_name")};
+    tree_ = static_cast<TTree *>(file_->Get(tree_name.c_str()));
     if (!tree_) {
-      EXCEPTION_RAISE("FileError",
-                      "File '" + fileName_ +
-                          "' does not have a TTree named 'LDMX_Events' in it.");
+      EXCEPTION_RAISE("FileError", "File '" + fileName_ +
+                                       "' does not have a TTree named '" +
+                                       tree_name + "' in it.");
     }
     entries_ = tree_->GetEntriesFast();
   }
@@ -68,15 +70,18 @@ EventFile::EventFile(const std::string &filename, EventFile *parent,
   importRunHeaders();
 }
 
-EventFile::EventFile(const std::string &filename)
-    : EventFile(filename, nullptr, false, false, -1) {}
+EventFile::EventFile(const framework::config::Parameters &params, 
+    const std::string &filename, bool isLoopable)
+    : EventFile(params, filename, nullptr, false, false, isLoopable) {}
 
-EventFile::EventFile(const std::string &filename, int compressionSetting)
-    : EventFile(filename, nullptr, true, true, compressionSetting) {}
+EventFile::EventFile(const framework::config::Parameters &params,
+                     const std::string &filename)
+    : EventFile(params, filename, nullptr, false, false, false) {}
 
-EventFile::EventFile(const std::string &filename, EventFile *parent,
-                     bool isSingleOutput, int compressionSetting)
-    : EventFile(filename, parent, true, isSingleOutput, compressionSetting) {}
+EventFile::EventFile(const framework::config::Parameters &params,
+                     const std::string &filename, EventFile *parent,
+                     bool isSingleOutput)
+    : EventFile(params, filename, parent, true, isSingleOutput, false) {}
 
 void EventFile::addDrop(const std::string &rule) {
   int offset;
@@ -98,7 +103,8 @@ void EventFile::addDrop(const std::string &rule) {
   }
 
   // more than one of (keep,drop,ignore) was provided => not valid rule
-  if (int(isKeep) + int(isDrop) + int(isIgnore) != 1) return;
+  if (int(isKeep) + int(isDrop) + int(isIgnore) != 1)
+    return;
 
   std::string srule = rule.substr(offset);
   for (i = srule.find_first_of(" \t\n\r"); i != std::string::npos;
@@ -106,10 +112,12 @@ void EventFile::addDrop(const std::string &rule) {
     srule.erase(i, 1);
 
   // name of branch is not given
-  if (srule.length() == 0) return;
+  if (srule.length() == 0)
+    return;
 
   // add wild card at end for matching purposes
-  if (srule.back() != '*') srule += ".*";  // add wildcard to back
+  if (srule.back() != '*')
+    srule += ".*"; // add wildcard to back
 
   if (isKeep) {
     // turn both the input and output tree's on
@@ -126,7 +134,7 @@ void EventFile::addDrop(const std::string &rule) {
   } else if (isDrop) {
     // drop means allowing it on reading but not writing
     // pass these regex to event bus so Event::add knows
-    event_->addDrop(srule);  // requires event_ to be set
+    event_->addDrop(srule); // requires event_ to be set
 
     // root needs . removed otherwise it gets cranky
     srule.erase(std::remove(srule.begin(), srule.end(), '.'), srule.end());
@@ -205,7 +213,12 @@ bool EventFile::nextEvent(bool storeCurrentEvent) {
     //  we aren't an output file
     // try to load another entry from our tree
     if (ientry_ + 1 >= entries_) {
-      return false;
+      // we are finishing this file
+      //  check if we are re-using events
+      if (isLoopable_)
+        ientry_ = -1;
+      else
+        return false;
     }
     ientry_++;
     tree_->LoadTree(ientry_);
@@ -242,6 +255,15 @@ void EventFile::setupEvent(Event *evt) {
     //  so give our tree to the event as input tree
     event_->setInputTree(tree_);
   } //output or input file
+}
+
+int EventFile::skipToEvent(int offset) {
+  // make sure the event number exists,
+  // -1 to account for stepping in nextEvent()
+  ientry_ = offset % entries_ - 1;
+  if (!this->nextEvent())
+    return -1;
+  return ientry_;
 }
 
 void EventFile::updateParent(EventFile *parent) {
@@ -302,15 +324,14 @@ void EventFile::close() {
 
     // create the branch on this tree
     ldmx::RunHeader *theHandle = nullptr;
-    runTree->Branch("RunHeader",
-                    "ldmx::RunHeader",
-                    &theHandle, 32000, 3);
+    runTree->Branch("RunHeader", "ldmx::RunHeader", &theHandle, 32000, 3);
 
     // copy over the run headers into the tree
     for (auto &[num, header_pair] : runMap_) {
       theHandle = header_pair.second;
       runTree->Fill();
-      if (header_pair.first) delete header_pair.second;
+      if (header_pair.first)
+        delete header_pair.second;
     }
 
     runTree->Write();
@@ -345,11 +366,11 @@ ldmx::RunHeader &EventFile::getRunHeader(int runNumber) {
 
 void EventFile::importRunHeaders() {
   // choose which file to import from
-  auto theImportFile{file_};  // if this is an input file
+  auto theImportFile{file_}; // if this is an input file
   if (isOutputFile_ and parent_ and parent_->file_)
     theImportFile = parent_->file_;  // output file with input parent
   else if (isOutputFile_)
-    return;  // output file, no input parent to read from
+    return; // output file, no input parent to read from
 
   if (theImportFile) {
     // the file exist
@@ -365,4 +386,4 @@ void EventFile::importRunHeaders() {
 
   return;
 }
-}  // namespace framework
+} // namespace framework
